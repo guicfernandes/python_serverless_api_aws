@@ -14,8 +14,16 @@ Parameters:
     Default: POST
   lambdaFunctionNamePost:
     Type: String
-    AllowedPattern: "[a-zA-Z0-9]+[a-zA-Z0-9-]+[a-zA-Z0-9]+"
-    Default: lambdaInsertTemperature
+    Default: lambda_insert_temperature
+  LambdaRole:
+    Type: String
+    Default: arn:aws:iam::373641468960:role/lambdaRoleExecutionGcfhfbjCustomized
+  ScriptPythonPost:
+    Type: String
+    Default: lambda/insert_temperature/insert_temperatura_api-0.0.1-py3.9.egg
+  ScriptBucket:
+    Type: String
+    Default: bk-scripts-python
 
 Resources:
   apiGateway:
@@ -37,7 +45,7 @@ Resources:
         Type: AWS_PROXY
         Uri: !Sub
           - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
-          - lambdaArn: !GetAtt lambdaFunction.Arn
+          - lambdaArn: !GetAtt lambdaFunctionPost.Arn
       ResourceId: !GetAtt apiGateway.RootResourceId
       RestApiId: !Ref apiGateway
 
@@ -49,24 +57,17 @@ Resources:
       RestApiId: !Ref apiGateway
       StageName: !Ref apiGatewayStageName
 
-  lambdaFunctionInsert:
+  lambdaFunctionPost:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        ZipFile: |
-          def handler(event,context):
-            return {
-              'body': 'Hello there {0}'.format(event['requestContext']['identity']['sourceIp']),
-              'headers': {
-                'Content-Type': 'text/plain'
-              },
-              'statusCode': 200
-            }
+        S3Bucket: !Ref ScriptBucket
+        S3Key: !Ref ScriptPythonPost
       Description: Insert Lambda function
       FunctionName: !Ref lambdaFunctionNamePost
-      Handler: lambda_function.lambda_handler
+      Handler: app.lambda_function.lambda_handler
       MemorySize: 128
-      Role: !GetAtt lambdaIAMRole.Arn
+      Role: !Ref LambdaRole
       Runtime: python3.9
 
   lambdaApiGatewayInvoke:
@@ -99,6 +100,18 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
+                  - dynamodb:*
+                  - iam:GetRole
+                  - iam:ListRoles
+                  - kms:DescribeKey
+                  - kms:ListAliases
+                  - lambda:CreateFunction
+                  - lambda:ListFunctions
+                  - lambda:ListEventSourceMappings
+                  - lambda:CreateEventSourceMapping
+                  - lambda:DeleteEventSourceMapping
+                  - lambda:GetFunctionConfiguration
+                  - lambda:DeleteFunction
                 Effect: Allow
                 Resource:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${lambdaFunctionNamePost}:*
