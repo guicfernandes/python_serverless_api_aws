@@ -15,7 +15,7 @@ Parameters:
   lambdaFunctionNamePost:
     Type: String
     Default: lambda_insert_temperature
-  LambdaRole:
+  LambdaRoleCustomized:
     Type: String
     Default: arn:aws:iam::373641468960:role/lambdaRoleExecutionGcfhfbjCustomized
   ScriptPythonPost:
@@ -67,7 +67,7 @@ Resources:
       FunctionName: !Ref lambdaFunctionNamePost
       Handler: app.lambda_function.lambda_handler
       MemorySize: 128
-      Role: !Ref LambdaRole
+      Role: !Ref LambdaRoleCustomized
       Runtime: python3.9
 
   lambdaApiGatewayInvoke:
